@@ -21,8 +21,11 @@ uint16_t scroll_2_length = 0;
 uint8_t scroll_3_segments[SCROLL_LIMIT + 5];
 uint16_t scroll_3_length = 0;
 
+uint16_t scrollPosition = 0;
+
 hw_timer_t* timer = NULL;
 uint8_t mode = 0;
+uint8_t lastMode = 0;
 uint8_t buttonState = 0;
 uint8_t previousButtonState = 0;
 const uint8_t numModes = 3;
@@ -61,38 +64,43 @@ void setup()
 
 void loop()
 {
+  if(mode != lastMode) {
+    scrollPosition = 0;
+    for(int i = 0; i < 4; i++) {
+      data[i] = BLANK;
+    }
+  }
+
   if(mode == 0) {
     display.clear();
-    delay(500);
+    delay(250);
   }
   if(mode == 1) {
     for(int j = 0; j < 3; j++) {
       data[j] = data[j+1];
     }
     data[3] = CHAR_SEGMENTS[random(16)];
-    display.setSegments(data, 4, 0);
-    delay(250);
   }
   if(mode == 2) {
-    for(int i = 0; i < scroll_1_length; i++) {
-      for(int j = 0; j < 3; j++) {
-        data[j] = data[j+1];
-      }
-      data[3] = scroll_1_segments[i];
-      display.setSegments(data, 4, 0);
-      delay(250);
-    }
+    scrollText(data, scroll_1_segments, scroll_1_length);
   }
   if(mode == 3) {
-    for(int i = 0; i < scroll_2_length; i++) {
-      for(int j = 0; j < 3; j++) {
-        data[j] = data[j+1];
-      }
-      data[3] = scroll_2_segments[i];
-      display.setSegments(data, 4, 0);
-      delay(250);
-    }
+    scrollText(data, scroll_2_segments, scroll_2_length);
   }
+  display.setSegments(data, 4, 0);
+  lastMode = mode;
+  delay(250);
+}
+
+void scrollText(uint8_t* output, const uint8_t* scrollText, const uint16_t& scrollLength) {
+  if(scrollPosition >= scrollLength) {
+    scrollPosition = 0;
+  }
+
+  for(int j = 0; j < 3; j++) {
+    output[j] = data[j+1];
+  }
+  output[3] = scrollText[scrollPosition++];
 }
 
 void encodeScrollString(uint16_t& scrollLength, uint8_t* scrollSegments, String input) {

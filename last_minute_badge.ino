@@ -102,13 +102,13 @@ void loop()
         data[3] = CHAR_SEGMENTS[random(16)];
         break;
       case 1:
-        scrollText(data, scroll_1_segments, scroll_1_length, scrollPosition);
+        updateScrollingText(data, scroll_1_segments, scroll_1_length, scrollPosition);
         break;
       case 2:
-        scrollText(data, scroll_2_segments, scroll_2_length, scrollPosition);
+        updateScrollingText(data, scroll_2_segments, scroll_2_length, scrollPosition);
         break;
       case 3:
-        scrollText(data, scroll_3_segments, scroll_3_length, scrollPosition);
+        updateScrollingText(data, scroll_3_segments, scroll_3_length, scrollPosition);
         break;
     }
     display.setSegments(data, 4, 0);
@@ -134,14 +134,14 @@ void loop()
       delay(1000);
       if(random(2)) {
         for(uint16_t i = 0; i < bangScrollLength;) {
-          scrollText(data, bangScrollSegments, bangScrollLength, i);
+          updateScrollingText(data, bangScrollSegments, bangScrollLength, i);
           display.setSegments(data, 4, 0);
           delay(DELAY_MILLIS);
         }
       }
       else {
         for(uint16_t i = 0; i < dudScrollLength;) {
-          scrollText(data, dudScrollSegments, dudScrollLength, i);
+          updateScrollingText(data, dudScrollSegments, dudScrollLength, i);
           display.setSegments(data, 4, 0);
           delay(DELAY_MILLIS);
         }
@@ -158,7 +158,7 @@ void loop()
   delay(DELAY_MILLIS);
 }
 
-void scrollText(uint8_t* output, const uint8_t* scrollText, const uint16_t& scrollLength, uint16_t& scrollPosition) {
+void updateScrollingText(uint8_t* output, const uint8_t* scrollText, const uint16_t& scrollLength, uint16_t& scrollPosition) {
   if(scrollPosition >= scrollLength) {
     scrollPosition = 0;
   }

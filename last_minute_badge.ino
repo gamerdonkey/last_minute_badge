@@ -29,7 +29,7 @@ uint16_t scrollPosition = 0;
 
 // countdown globals
 long timeRemaining = 0;
-long countdownStart = 0;
+long lastCountdownUpdateMillis = 0;
 long countdownMinutes = 0;
 long countdownSeconds = 0;
 uint8_t bangScrollSegments[SCROLL_LIMIT + 5];
@@ -118,13 +118,17 @@ void loop()
   if(mode == 4) {
     if(timeRemaining <= 0) {
       timeRemaining = COUNTDOWN_SECS;
-      countdownStart = millis();
+      lastCountdownUpdateMillis = 0;
     }
 
-    timeRemaining = (COUNTDOWN_SECS - (millis() - countdownStart) / 1000);
-    countdownMinutes = timeRemaining / 60 * 100;
-    countdownSeconds = timeRemaining - (60 * countdownMinutes / 100);
-    display.showNumberDecEx(countdownMinutes + countdownSeconds, 0b01000000, true);
+    if((millis() - lastCountdownUpdateMillis) >= 1000) {
+      timeRemaining--;
+      countdownMinutes = timeRemaining / 60;
+      countdownSeconds = timeRemaining - (60 * countdownMinutes);
+      lastCountdownUpdateMillis = millis();
+    }
+
+    display.showNumberDecEx(countdownMinutes * 100 + countdownSeconds, 0b01000000, true);
 
     if(timeRemaining == 0) {
       delay(1000);

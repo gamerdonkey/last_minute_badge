@@ -5,7 +5,7 @@
 #define BUTTON                27
 #define BATT_VOLT            A13
 
-#define NUM_MODES              5
+#define NUM_MODES              6
 
 #define SCROLL_LIMIT         120
 #define SCROLL_PADDING         6
@@ -48,7 +48,7 @@ hw_timer_t* timer = NULL;
 void IRAM_ATTR onTimer() {
   buttonState = digitalRead(BUTTON);
   if(buttonState == LOW && previousButtonState == HIGH) {
-    if(mode < NUM_MODES) {
+    if(mode < NUM_MODES - 1) {
       mode++;
     }
     else {
@@ -147,7 +147,7 @@ void loop()
 
   // battery voltage monitor
   if(mode == 5) {
-    display.showNumberDec(map(analogRead(BATT_VOLT), 0, 2325, 0, 420));
+    display.showNumberDec(map(analogRead(BATT_VOLT), 0, 2305, 0, 420));
   }
 
   lastMode = mode;

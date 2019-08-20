@@ -5,17 +5,19 @@
 #define BUTTON                27
 #define BATT_VOLT            A13
 
+#define NUM_MODES              5
+
 #define SCROLL_LIMIT         120
-#define BLANK_LENGTH           6
+#define SCROLL_PADDING         6
+#define BLANK_SEGMENT       0x00
 
-#define BLANK               0x00
-
-#define COUNTDOWN_TIME      3*60
+#define COUNTDOWN_SECS      3*60
+#define DELAY_MILLIS         250
 
 // 0-9, a-z, blank, dash, star
 const uint8_t CHAR_SEGMENTS[] = { 0x3f, 0x06, 0x5b, 0x4f, 0x66, 0x6d, 0x7d, 0x07, 0x7f, 0x6f, 0x77, 0x7c, 0x39, 0x5e, 0x79, 0x71, 0x3d, 0x76, 0x06, 0x1e, 0x76, 0x38, 0x55, 0x54, 0x3f, 0x73, 0x67, 0x50, 0x6d, 0x78, 0x3e, 0x1c, 0x2a, 0x76, 0x6e, 0x5b, 0x00, 0x40, 0x63 };
-uint16_t limit = sizeof(CHAR_SEGMENTS);
 
+// scrolling globals
 uint8_t data[] = { 0x00, 0x00, 0x00, 0x00 };
 uint8_t scroll_1_segments[SCROLL_LIMIT + 5];
 uint16_t scroll_1_length = 0;
@@ -23,9 +25,9 @@ uint8_t scroll_2_segments[SCROLL_LIMIT + 5];
 uint16_t scroll_2_length = 0;
 uint8_t scroll_3_segments[SCROLL_LIMIT + 5];
 uint16_t scroll_3_length = 0;
-
 uint16_t scrollPosition = 0;
 
+// countdown globals
 long timeRemaining = 0;
 long countdownStart = 0;
 long countdownMinutes = 0;
@@ -35,19 +37,18 @@ uint16_t bangScrollLength = 0;
 uint8_t dudScrollSegments[SCROLL_LIMIT + 5];
 uint16_t dudScrollLength = 0;
 
-hw_timer_t* timer = NULL;
+// mode globals and button setup
 uint8_t mode = 0;
 uint8_t lastMode = 0;
 uint8_t buttonState = 0;
 uint8_t previousButtonState = 0;
-const uint8_t numModes = 5;
 
-TM1637Display display(DISPLAY_CLK, DISPLAY_DIO);
+hw_timer_t* timer = NULL;
 
 void IRAM_ATTR onTimer() {
   buttonState = digitalRead(BUTTON);
   if(buttonState == LOW && previousButtonState == HIGH) {
-    if(mode < numModes) {
+    if(mode < NUM_MODES) {
       mode++;
     }
     else {
@@ -56,6 +57,9 @@ void IRAM_ATTR onTimer() {
   }
   previousButtonState = buttonState;
 }
+
+// display setup
+TM1637Display display(DISPLAY_CLK, DISPLAY_DIO);
 
 void setup()
 {
@@ -84,10 +88,11 @@ void loop()
   if(mode != lastMode) {
     scrollPosition = 0;
     for(int i = 0; i < 4; i++) {
-      data[i] = BLANK;
+      data[i] = BLANK_SEGMENT;
     }
   }
 
+  // scroll modes
   if(mode < 4) {
     switch(mode) {
       case 0:
@@ -108,13 +113,15 @@ void loop()
     }
     display.setSegments(data, 4, 0);
   }
+
+  // countdown mode
   if(mode == 4) {
     if(timeRemaining <= 0) {
-      timeRemaining = COUNTDOWN_TIME;
+      timeRemaining = COUNTDOWN_SECS;
       countdownStart = millis();
     }
 
-    timeRemaining = (COUNTDOWN_TIME - (millis() - countdownStart) / 1000);
+    timeRemaining = (COUNTDOWN_SECS - (millis() - countdownStart) / 1000);
     countdownMinutes = timeRemaining / 60 * 100;
     countdownSeconds = timeRemaining - (60 * countdownMinutes / 100);
     display.showNumberDecEx(countdownMinutes + countdownSeconds, 0b01000000, true);
@@ -125,25 +132,26 @@ void loop()
         for(uint16_t i = 0; i < bangScrollLength;) {
           scrollText(data, bangScrollSegments, bangScrollLength, i);
           display.setSegments(data, 4, 0);
-          delay(250);
+          delay(DELAY_MILLIS);
         }
       }
       else {
         for(uint16_t i = 0; i < dudScrollLength;) {
           scrollText(data, dudScrollSegments, dudScrollLength, i);
           display.setSegments(data, 4, 0);
-          delay(250);
+          delay(DELAY_MILLIS);
         }
       }
     }
   }
 
+  // battery voltage monitor
   if(mode == 5) {
     display.showNumberDec(map(analogRead(BATT_VOLT), 0, 2325, 0, 420));
   }
 
   lastMode = mode;
-  delay(250);
+  delay(DELAY_MILLIS);
 }
 
 void scrollText(uint8_t* output, const uint8_t* scrollText, const uint16_t& scrollLength, uint16_t& scrollPosition) {
@@ -158,14 +166,14 @@ void scrollText(uint8_t* output, const uint8_t* scrollText, const uint16_t& scro
 }
 
 void encodeScrollString(uint16_t& scrollLength, uint8_t* scrollSegments, String input) {
-  scrollLength = constrain(input.length(), 0, SCROLL_LIMIT) + BLANK_LENGTH;
+  scrollLength = constrain(input.length(), 0, SCROLL_LIMIT) + SCROLL_PADDING;
 
   for(int i = 0; i < scrollLength; i++) {
-    if(i < BLANK_LENGTH) {
-      scrollSegments[i] = BLANK;
+    if(i < SCROLL_PADDING) {
+      scrollSegments[i] = BLANK_SEGMENT;
     }
     else {
-      scrollSegments[i] = encodeCharacter(input.charAt(i - BLANK_LENGTH));
+      scrollSegments[i] = encodeCharacter(input.charAt(i - SCROLL_PADDING));
     }
   }
 }
